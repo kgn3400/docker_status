@@ -1,6 +1,7 @@
 """Component api."""
 
 from dataclasses import dataclass
+from functools import partial
 
 import docker
 from docker import errors
@@ -17,6 +18,8 @@ from .const import (
     CONF_DOCKER_ENV_SENSOR_NAME,
     CONF_SENSORS,
     LOGGER,
+    SENSOR_CONTAINERS_CPU_PERCENT,
+    SENSOR_CONTAINERS_MEMORY_USAGE,
     SENSOR_CONTAINERS_RUNNING,
     SENSOR_CONTAINERS_STOPPED,
     SENSOR_IMAGES,
@@ -39,9 +42,8 @@ class DockerData:
         self.engine_url: str = engine_url
 
         self.client: docker.DockerClient
-        self.values: dict[str, int] = {}
-        # self.containers_running: int = 0
-        # self.containers_stopped: int = 0
+        self.values: dict[str, int | float] = {}
+        self.values_uom: dict[str, str] = {}
 
 
 # ------------------------------------------------------------------
@@ -73,21 +75,63 @@ class ComponentApi:
     # ------------------------------------------------------------------
     async def update_sensors_date(self) -> None:
         """Update data."""
+
+        def convert_bytes_to(byte_count: int) -> tuple[float, str]:
+            """Konverterer bytes til MB eller GB baseret på størrelsen."""
+            units: list[str] = ["B", "KB", "MB", "GB"]
+            size: float = float(byte_count)
+
+            for unit in units:
+                if size < 1024:
+                    return (size, unit)
+                size /= 1024
+            return (size, "B")
+
         for env_sensor in self.env_sensors.values():
             # -- Containers
-            env_sensor.values[SENSOR_CONTAINERS_RUNNING] = len(
-                await self.hass.async_add_executor_job(
-                    env_sensor.client.containers.list
-                )
-            )
+            env_sensor.values[SENSOR_CONTAINERS_RUNNING] = 0
+            env_sensor.values[SENSOR_CONTAINERS_STOPPED] = 0
+            cpu_percent = 0.0
+            memory_usage_bytes: int = 0
 
             containers: list[Container] = await self.hass.async_add_executor_job(
                 env_sensor.client.containers.list, True
             )  # type: ignore
 
-            env_sensor.values[SENSOR_CONTAINERS_STOPPED] = (
-                len(containers) - env_sensor.values[SENSOR_CONTAINERS_RUNNING]
-            )
+            for container in containers:
+                if container.status != "running":
+                    env_sensor.values[SENSOR_CONTAINERS_STOPPED] += 1
+                    continue
+
+                env_sensor.values[SENSOR_CONTAINERS_RUNNING] += 1
+
+                stats = await self.hass.async_add_executor_job(
+                    partial(container.stats, decode=False, stream=False)
+                )
+
+                cpu_delta = float(
+                    stats["cpu_stats"]["cpu_usage"]["total_usage"]
+                ) - float(stats["precpu_stats"]["cpu_usage"]["total_usage"])
+                system_cpu_delta = float(
+                    stats["cpu_stats"]["system_cpu_usage"]
+                ) - float(stats["precpu_stats"]["system_cpu_usage"])
+
+                if system_cpu_delta > 0.0 and cpu_delta > 0.0:
+                    cpu_percent += (
+                        (cpu_delta / system_cpu_delta)
+                        #      * float(len(stats["cpu_stats"]["cpu_usage"]["percpu_usage"]))
+                        * 100.0
+                    )
+
+                memory_usage_bytes += stats["memory_stats"]["usage"]
+
+            env_sensor.values[SENSOR_CONTAINERS_CPU_PERCENT] = round(cpu_percent, 2)
+            env_sensor.values_uom[SENSOR_CONTAINERS_CPU_PERCENT] = "%"
+
+            memory_usage, uom = convert_bytes_to(memory_usage_bytes)
+
+            env_sensor.values[SENSOR_CONTAINERS_MEMORY_USAGE] = round(memory_usage, 2)
+            env_sensor.values_uom[SENSOR_CONTAINERS_MEMORY_USAGE] = uom
 
             # -- images
             images: list[Image] = await self.hass.async_add_executor_job(
@@ -162,17 +206,32 @@ class ComponentApi:
             self.env_sensors[tmp_data.sensor_name] = tmp_data
 
     # ------------------------------------------------------------------
-    def get_value(self, env_sensor_name: str, sensor_type: str) -> int:
+    def get_value(self, env_sensor_name: str, sensor_type: str) -> int | float:
         """Get value."""
         return self.env_sensors[env_sensor_name].values.get(sensor_type, 0)
 
     # ------------------------------------------------------------------
-    def get_value_sum(self, sensor_type: str) -> int:
+    def get_value_uom(self, env_sensor_name: str, sensor_type: str) -> str | None:
+        """Get value unit of measurement."""
+        return self.env_sensors[env_sensor_name].values_uom.get(sensor_type, None)
+
+    # ------------------------------------------------------------------
+    def get_value_sum(self, sensor_type: str) -> int | float:
         """Get value sum."""
 
-        tmp_sum: int = 0
+        tmp_sum: int | float = 0
 
         for sensor in self.env_sensors.values():
             tmp_sum += sensor.values.get(sensor_type, 0)
 
         return tmp_sum
+
+    # ------------------------------------------------------------------
+    def get_value_sum_uom(self, sensor_type: str) -> str | None:
+        """Get value sum."""
+
+        for sensor in self.env_sensors.values():
+            if sensor.values.get(sensor_type, None) is not None:
+                return sensor.values_uom.get(sensor_type, None)
+
+        return None

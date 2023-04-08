@@ -17,6 +17,7 @@ from .const import (
     CONF_DOCKER_ENV_SENSOR_NAME,
     CONF_SENSORS,
     DOCKER_SENSORS,
+    DOCKER_SENSORS_SUM,
     DOMAIN,
 )
 from .entity import ComponentEntity
@@ -52,7 +53,7 @@ async def async_setup_entry(
             )
 
     # -- Sum sensors
-    for docker_sensor in DOCKER_SENSORS:
+    for docker_sensor in DOCKER_SENSORS_SUM:
         sensors.append(
             DockerSensorSum(
                 coordinator,
@@ -107,9 +108,15 @@ class DockerSensor(ComponentEntity, SensorEntity):
 
     # ------------------------------------------------------
     @property
-    def native_value(self) -> int | None:
+    def native_value(self) -> int | float | None:
         """Native value."""
         return self.component_api.get_value(self.env_name, self.sensor_type)
+
+    # ------------------------------------------------------
+    @property
+    def native_unit_of_measurement(self) -> str | None:
+        """Return the unit the value is expressed in."""
+        return self.component_api.get_value_uom(self.env_name, self.sensor_type)
 
     # ------------------------------------------------------
     @property
@@ -188,9 +195,15 @@ class DockerSensorSum(ComponentEntity, SensorEntity):
 
     # ------------------------------------------------------
     @property
-    def native_value(self) -> int | None:
+    def native_value(self) -> int | float | None:
         """Native value."""
         return self.component_api.get_value_sum(self.sensor_type)
+
+    # ------------------------------------------------------
+    @property
+    def native_unit_of_measurement(self) -> str | None:
+        """Return the unit the value is expressed in."""
+        return self.component_api.get_value_sum_uom(self.sensor_type)
 
     # ------------------------------------------------------
     @property
