@@ -44,6 +44,10 @@ class DockerData:
         self.client: docker.DockerClient
         self.values: dict[str, int | float] = {}
         self.values_uom: dict[str, str] = {}
+        self.containers_running: list[str | None] = []
+        self.containers_stopped: list[str | None] = []
+        self.images_unused: list[str | None] = []
+        self.volumes_unused: list[str | None] = []
 
 
 # ------------------------------------------------------------------
@@ -67,14 +71,30 @@ class ComponentApi:
 
         if self.first_time:
             await self.async_init()
+            self.first_time = False
 
-        self.first_time = False
-
-        await self.update_sensors_date()
+        await self.update_sensors_data()
 
     # ------------------------------------------------------------------
-    async def update_sensors_date(self) -> None:
+    async def update_sensors_data(self) -> None:
         """Update data."""
+
+        for env_sensor in self.env_sensors.values():
+            containers: list[Container] = await self.hass.async_add_executor_job(
+                env_sensor.client.containers.list, True
+            )  # type: ignore
+
+            await self.update_container_data(env_sensor, containers)
+
+            await self.update_image_data(env_sensor, containers)
+
+            await self.update_volume_data(env_sensor, containers)
+
+    # ------------------------------------------------------------------
+    async def update_container_data(
+        self, env_sensor: DockerData, containers: list[Container]
+    ) -> None:
+        """Update container data."""
 
         def convert_bytes_to(byte_count: int) -> tuple[float, str]:
             """Konverterer bytes til MB eller GB baseret på størrelsen."""
@@ -85,105 +105,125 @@ class ComponentApi:
                 if size < 1024:
                     return (size, unit)
                 size /= 1024
-            return (size, "B")
+            return (size, units[0])  # Bytes
 
-        for env_sensor in self.env_sensors.values():
-            # -- Containers
-            env_sensor.values[SENSOR_CONTAINERS_RUNNING] = 0
-            env_sensor.values[SENSOR_CONTAINERS_STOPPED] = 0
-            cpu_percent = 0.0
-            memory_usage_bytes: int = 0
+        env_sensor.values[SENSOR_CONTAINERS_RUNNING] = 0
+        env_sensor.values[SENSOR_CONTAINERS_STOPPED] = 0
+        env_sensor.containers_running.clear()
+        env_sensor.containers_stopped.clear()
 
-            containers: list[Container] = await self.hass.async_add_executor_job(
-                env_sensor.client.containers.list, True
-            )  # type: ignore
+        cpu_percent = 0.0
+        memory_usage_bytes: int = 0
+
+        for container in containers:
+            if container.status != "running":
+                env_sensor.values[SENSOR_CONTAINERS_STOPPED] += 1
+                env_sensor.containers_stopped.append(container.name)
+                continue
+
+            env_sensor.values[SENSOR_CONTAINERS_RUNNING] += 1
+            env_sensor.containers_running.append(container.name)
+
+            stats = await self.hass.async_add_executor_job(
+                partial(container.stats, decode=False, stream=False)
+            )
+
+            cpu_delta = float(stats["cpu_stats"]["cpu_usage"]["total_usage"]) - float(
+                stats["precpu_stats"]["cpu_usage"]["total_usage"]
+            )
+            system_cpu_delta = float(stats["cpu_stats"]["system_cpu_usage"]) - float(
+                stats["precpu_stats"]["system_cpu_usage"]
+            )
+
+            if system_cpu_delta > 0.0 and cpu_delta > 0.0:
+                cpu_percent += (
+                    (cpu_delta / system_cpu_delta)
+                    #      * float(len(stats["cpu_stats"]["cpu_usage"]["percpu_usage"]))
+                    * 100.0
+                )
+
+            memory_usage_bytes += stats["memory_stats"]["usage"]
+
+        env_sensor.values[SENSOR_CONTAINERS_CPU_PERCENT] = round(cpu_percent, 2)
+        env_sensor.values_uom[SENSOR_CONTAINERS_CPU_PERCENT] = "%"
+
+        memory_usage, uom = convert_bytes_to(memory_usage_bytes)
+
+        env_sensor.values[SENSOR_CONTAINERS_MEMORY_USAGE] = round(memory_usage, 2)
+        env_sensor.values_uom[SENSOR_CONTAINERS_MEMORY_USAGE] = uom
+
+    # ------------------------------------------------------------------
+    async def update_image_data(
+        self, env_sensor: DockerData, containers: list[Container]
+    ) -> None:
+        """Update image data."""
+        env_sensor.images_unused.clear()
+        images: list[Image] = await self.hass.async_add_executor_job(
+            env_sensor.client.images.list
+        )  # type: ignore
+
+        env_sensor.values[SENSOR_IMAGES] = len(images)
+        env_sensor.values[SENSOR_IMAGES_DANGLING] = len(
+            await self.hass.async_add_executor_job(
+                env_sensor.client.images.list, None, False, {"dangling": True}
+            )
+        )
+
+        tmp_count: int = 0
+
+        for image in images:
+            used: bool = False
 
             for container in containers:
-                if container.status != "running":
-                    env_sensor.values[SENSOR_CONTAINERS_STOPPED] += 1
-                    continue
+                if image.id == container.attrs.get("Image", ""):  # type: ignore
+                    used = True
+                    tmp_count += 1
+                    break
 
-                env_sensor.values[SENSOR_CONTAINERS_RUNNING] += 1
+            if not used and len(image.tags) > 0:
+                env_sensor.images_unused.append(image.tags[0])
 
-                stats = await self.hass.async_add_executor_job(
-                    partial(container.stats, decode=False, stream=False)
-                )
+        env_sensor.values[SENSOR_IMAGES_UNUSED] = (
+            env_sensor.values[SENSOR_IMAGES] - tmp_count
+        )
 
-                cpu_delta = float(
-                    stats["cpu_stats"]["cpu_usage"]["total_usage"]
-                ) - float(stats["precpu_stats"]["cpu_usage"]["total_usage"])
-                system_cpu_delta = float(
-                    stats["cpu_stats"]["system_cpu_usage"]
-                ) - float(stats["precpu_stats"]["system_cpu_usage"])
+    # ------------------------------------------------------------------
+    async def update_volume_data(
+        self, env_sensor: DockerData, containers: list[Container]
+    ) -> None:
+        """Update image data."""
 
-                if system_cpu_delta > 0.0 and cpu_delta > 0.0:
-                    cpu_percent += (
-                        (cpu_delta / system_cpu_delta)
-                        #      * float(len(stats["cpu_stats"]["cpu_usage"]["percpu_usage"]))
-                        * 100.0
-                    )
+        env_sensor.volumes_unused.clear()
 
-                memory_usage_bytes += stats["memory_stats"]["usage"]
+        volumes: list[Volume] = await self.hass.async_add_executor_job(
+            env_sensor.client.volumes.list
+        )  # type: ignore
 
-            env_sensor.values[SENSOR_CONTAINERS_CPU_PERCENT] = round(cpu_percent, 2)
-            env_sensor.values_uom[SENSOR_CONTAINERS_CPU_PERCENT] = "%"
+        env_sensor.values[SENSOR_VOLUMES] = len(volumes)
 
-            memory_usage, uom = convert_bytes_to(memory_usage_bytes)
+        tmp_count: int = 0
 
-            env_sensor.values[SENSOR_CONTAINERS_MEMORY_USAGE] = round(memory_usage, 2)
-            env_sensor.values_uom[SENSOR_CONTAINERS_MEMORY_USAGE] = uom
+        for volume in volumes:
+            volume_is_used = False
 
-            # -- images
-            images: list[Image] = await self.hass.async_add_executor_job(
-                env_sensor.client.images.list
-            )  # type: ignore
-
-            env_sensor.values[SENSOR_IMAGES] = len(images)
-            env_sensor.values[SENSOR_IMAGES_DANGLING] = len(
-                await self.hass.async_add_executor_job(
-                    env_sensor.client.images.list, None, False, {"dangling": True}
-                )
-            )
-
-            tmp_count: int = 0
-
-            for image in images:
-                for container in containers:
-                    if image.id == container.attrs.get("Image", ""):  # type: ignore
+            for container in containers:
+                for mount in container.attrs["Mounts"]:  # type:ignore
+                    if (
+                        mount.get("Type", "") == "volume"
+                        and mount.get("Name", "") == volume.name
+                    ):
                         tmp_count += 1
-
-            env_sensor.values[SENSOR_IMAGES_UNUSED] = (
-                env_sensor.values[SENSOR_IMAGES] - tmp_count
-            )
-
-            # -- Volumes
-
-            volumes: list[Volume] = await self.hass.async_add_executor_job(
-                env_sensor.client.volumes.list
-            )  # type: ignore
-
-            env_sensor.values[SENSOR_VOLUMES] = len(volumes)
-
-            tmp_count: int = 0
-
-            for volume in volumes:
-                volume_is_used = False
-
-                for container in containers:
-                    for mount in container.attrs["Mounts"]:  # type:ignore
-                        if (
-                            mount.get("Type", "") == "volume"
-                            and mount.get("Name", "") == volume.name
-                        ):
-                            tmp_count += 1
-                            volume_is_used = True
-                            break
-                    if volume_is_used:
+                        volume_is_used = True
                         break
 
-            env_sensor.values[SENSOR_VOLUMES_UNUSED] = (
-                env_sensor.values[SENSOR_VOLUMES] - tmp_count
-            )
+                if volume_is_used:
+                    break
+            if not volume_is_used:
+                env_sensor.volumes_unused.append(volume.name)
+
+        env_sensor.values[SENSOR_VOLUMES_UNUSED] = (
+            env_sensor.values[SENSOR_VOLUMES] - tmp_count
+        )
 
     # ------------------------------------------------------------------
     async def async_init(self) -> None:
@@ -235,3 +275,20 @@ class ComponentApi:
                 return sensor.values_uom.get(sensor_type, None)
 
         return None
+
+    # ------------------------------------------------------------------
+    def get_extra_state_attributes(
+        self, env_sensor_name: str, sensor_type: str
+    ) -> dict:
+        """Get attributes."""
+
+        if sensor_type == SENSOR_CONTAINERS_RUNNING:
+            return {"Running": self.env_sensors[env_sensor_name].containers_running}
+        elif sensor_type == SENSOR_CONTAINERS_STOPPED:
+            return {"Stopped": self.env_sensors[env_sensor_name].containers_stopped}
+        elif sensor_type == SENSOR_IMAGES_UNUSED:
+            return {"Unused": self.env_sensors[env_sensor_name].images_unused}
+        elif sensor_type == SENSOR_VOLUMES_UNUSED:
+            return {"Unused": self.env_sensors[env_sensor_name].volumes_unused}
+
+        return {}

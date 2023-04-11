@@ -122,9 +122,10 @@ class DockerSensor(ComponentEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict:
         """Extra state attributes."""
-        attr: dict = {}
 
-        return attr
+        return self.component_api.get_extra_state_attributes(
+            self.env_name, self.sensor_type
+        )
 
     # ------------------------------------------------------
     @property
