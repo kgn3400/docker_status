@@ -10,7 +10,7 @@ from docker.models.images import Image
 from docker.models.volumes import Volume
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
@@ -65,7 +65,19 @@ class ComponentApi:
         self.first_time: bool = True
         self.env_sensors: dict[str, DockerData] = {}
 
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------
+    async def async_update_service(self, call: ServiceCall) -> None:
+        """Update via service."""
+
+        await self.async_update_sensors_data()
+
+    # -------------------------------------------------------------------
+    async def async_prune_images_service(self, call: ServiceCall) -> None:
+        """Prune via service."""
+        await self.async_prune_images()
+        await self.async_update_sensors_data()
+
+    # -------------------------------------------------------------------
     async def async_update(self) -> None:
         """Update."""
 
@@ -73,10 +85,10 @@ class ComponentApi:
             await self.async_init()
             self.first_time = False
 
-        await self.update_sensors_data()
+        await self.async_update_sensors_data()
 
     # ------------------------------------------------------------------
-    async def update_sensors_data(self) -> None:
+    async def async_update_sensors_data(self) -> None:
         """Update data."""
 
         for env_sensor in self.env_sensors.values():
@@ -84,14 +96,23 @@ class ComponentApi:
                 env_sensor.client.containers.list, True
             )  # type: ignore
 
-            await self.update_container_data(env_sensor, containers)
+            await self.async_update_container_data(env_sensor, containers)
 
-            await self.update_image_data(env_sensor, containers)
+            await self.async_update_image_data(env_sensor, containers)
 
-            await self.update_volume_data(env_sensor, containers)
+            await self.async_update_volume_data(env_sensor, containers)
 
     # ------------------------------------------------------------------
-    async def update_container_data(
+    async def async_prune_images(self) -> None:
+        """Prune images."""
+
+        for env_sensor in self.env_sensors.values():
+            await self.hass.async_add_executor_job(
+                env_sensor.client.images.prune, {"dangling": False}
+            )
+
+    # ------------------------------------------------------------------
+    async def async_update_container_data(
         self, env_sensor: DockerData, containers: list[Container]
     ) -> None:
         """Update container data."""
@@ -153,7 +174,7 @@ class ComponentApi:
         env_sensor.values_uom[SENSOR_CONTAINERS_MEMORY_USAGE] = uom
 
     # ------------------------------------------------------------------
-    async def update_image_data(
+    async def async_update_image_data(
         self, env_sensor: DockerData, containers: list[Container]
     ) -> None:
         """Update image data."""
@@ -188,7 +209,7 @@ class ComponentApi:
         )
 
     # ------------------------------------------------------------------
-    async def update_volume_data(
+    async def async_update_volume_data(
         self, env_sensor: DockerData, containers: list[Container]
     ) -> None:
         """Update image data."""

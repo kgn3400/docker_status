@@ -10,6 +10,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .component_api import ComponentApi
 from .const import DOMAIN, LOGGER
+from .services import async_setup_services
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
@@ -45,7 +46,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    #  await async_setup_services(hass, component_api)
+    await async_setup_services(hass, component_api)
 
     return True
 
