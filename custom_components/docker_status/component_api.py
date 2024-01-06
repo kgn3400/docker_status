@@ -75,7 +75,7 @@ class ComponentApi:
     async def async_prune_images_service(self, call: ServiceCall) -> None:
         """Prune via service."""
         await self.async_prune_images()
-        await self.async_update_sensors_data()
+        await self.async_update_sensors_data(False)
 
     # -------------------------------------------------------------------
     async def async_update(self) -> None:
@@ -88,7 +88,10 @@ class ComponentApi:
         await self.async_update_sensors_data()
 
     # ------------------------------------------------------------------
-    async def async_update_sensors_data(self) -> None:
+    async def async_update_sensors_data(
+        self,
+        get_job_info: bool = True,
+    ) -> None:
         """Update data."""
 
         for env_sensor in self.env_sensors.values():
@@ -96,7 +99,7 @@ class ComponentApi:
                 env_sensor.client.containers.list, True
             )  # type: ignore
 
-            await self.async_update_container_data(env_sensor, containers)
+            await self.async_update_container_data(env_sensor, containers, get_job_info)
 
             await self.async_update_image_data(env_sensor, containers)
 
@@ -113,7 +116,10 @@ class ComponentApi:
 
     # ------------------------------------------------------------------
     async def async_update_container_data(
-        self, env_sensor: DockerData, containers: list[Container]
+        self,
+        env_sensor: DockerData,
+        containers: list[Container],
+        get_job_info: bool = True,
     ) -> None:
         """Update container data."""
 
@@ -145,33 +151,35 @@ class ComponentApi:
             env_sensor.values[SENSOR_CONTAINERS_RUNNING] += 1
             env_sensor.containers_running.append(container.name)
 
-            stats = await self.hass.async_add_executor_job(
-                partial(container.stats, decode=False, stream=False)
-            )
-
-            cpu_delta = float(stats["cpu_stats"]["cpu_usage"]["total_usage"]) - float(
-                stats["precpu_stats"]["cpu_usage"]["total_usage"]
-            )
-            system_cpu_delta = float(stats["cpu_stats"]["system_cpu_usage"]) - float(
-                stats["precpu_stats"]["system_cpu_usage"]
-            )
-
-            if system_cpu_delta > 0.0 and cpu_delta > 0.0:
-                cpu_percent += (
-                    (cpu_delta / system_cpu_delta)
-                    #      * float(len(stats["cpu_stats"]["cpu_usage"]["percpu_usage"]))
-                    * 100.0
+            if get_job_info:
+                stats = await self.hass.async_add_executor_job(
+                    partial(container.stats, decode=False, stream=False)
                 )
 
-            memory_usage_bytes += stats["memory_stats"]["usage"]
+                cpu_delta = float(
+                    stats["cpu_stats"]["cpu_usage"]["total_usage"]
+                ) - float(stats["precpu_stats"]["cpu_usage"]["total_usage"])
+                system_cpu_delta = float(
+                    stats["cpu_stats"]["system_cpu_usage"]
+                ) - float(stats["precpu_stats"]["system_cpu_usage"])
 
-        env_sensor.values[SENSOR_CONTAINERS_CPU_PERCENT] = round(cpu_percent, 2)
-        env_sensor.values_uom[SENSOR_CONTAINERS_CPU_PERCENT] = "%"
+                if system_cpu_delta > 0.0 and cpu_delta > 0.0:
+                    cpu_percent += (
+                        (cpu_delta / system_cpu_delta)
+                        #      * float(len(stats["cpu_stats"]["cpu_usage"]["percpu_usage"]))
+                        * 100.0
+                    )
 
-        memory_usage, uom = convert_bytes_to(memory_usage_bytes)
+                memory_usage_bytes += stats["memory_stats"]["usage"]
 
-        env_sensor.values[SENSOR_CONTAINERS_MEMORY_USAGE] = round(memory_usage, 2)
-        env_sensor.values_uom[SENSOR_CONTAINERS_MEMORY_USAGE] = uom
+        if get_job_info:
+            env_sensor.values[SENSOR_CONTAINERS_CPU_PERCENT] = round(cpu_percent, 2)
+            env_sensor.values_uom[SENSOR_CONTAINERS_CPU_PERCENT] = "%"
+
+            memory_usage, uom = convert_bytes_to(memory_usage_bytes)
+
+            env_sensor.values[SENSOR_CONTAINERS_MEMORY_USAGE] = round(memory_usage, 2)
+            env_sensor.values_uom[SENSOR_CONTAINERS_MEMORY_USAGE] = uom
 
     # ------------------------------------------------------------------
     async def async_update_image_data(
