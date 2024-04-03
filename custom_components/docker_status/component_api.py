@@ -84,8 +84,9 @@ class ComponentApi:
         if self.first_time:
             await self.async_init()
             self.first_time = False
-
-        await self.async_update_sensors_data()
+            await self.async_update_sensors_data(False)
+        else:
+            await self.async_update_sensors_data()
 
     # ------------------------------------------------------------------
     async def async_update_sensors_data(
@@ -264,6 +265,12 @@ class ComponentApi:
                 sensor.get(CONF_DOCKER_ENV_SENSOR_NAME),
                 sensor.get(CONF_DOCKER_ENGINE_URL),
             )
+
+            tmp_data.values[SENSOR_CONTAINERS_CPU_PERCENT] = 0.0
+            tmp_data.values_uom[SENSOR_CONTAINERS_CPU_PERCENT] = "%"
+
+            tmp_data.values[SENSOR_CONTAINERS_MEMORY_USAGE] = 0.0
+            tmp_data.values_uom[SENSOR_CONTAINERS_MEMORY_USAGE] = "B"
 
             try:
                 tmp_data.client = await self.hass.async_add_executor_job(
