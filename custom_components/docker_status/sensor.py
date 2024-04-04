@@ -39,31 +39,31 @@ async def async_setup_entry(
     config = dict(entry.options)
 
     for sensor in config[CONF_SENSORS]:
-        for docker_sensor in DOCKER_SENSORS:
-            sensors.append(
-                DockerSensor(
-                    coordinator,
-                    entry,
-                    component_api,
-                    sensor[CONF_DOCKER_ENV_SENSOR_NAME],
-                    docker_sensor,
-                    sensor[CONF_DOCKER_ENGINE_URL],
-                    sensor[CONF_UNIQUE_ID],
-                )
-            )
-
-    # -- Sum sensors
-    for docker_sensor in DOCKER_SENSORS_SUM:
-        sensors.append(
-            DockerSensorSum(
+        sensors.extend(
+            DockerSensor(
                 coordinator,
                 entry,
                 component_api,
-                config[CONF_DOCKER_BASE_NAME],
+                sensor[CONF_DOCKER_ENV_SENSOR_NAME],
                 docker_sensor,
-                config[CONF_UNIQUE_ID],
+                sensor[CONF_DOCKER_ENGINE_URL],
+                sensor[CONF_UNIQUE_ID],
             )
+            for docker_sensor in DOCKER_SENSORS
         )
+
+    # -- Sum sensors
+    sensors.extend(
+        DockerSensorSum(
+            coordinator,
+            entry,
+            component_api,
+            config[CONF_DOCKER_BASE_NAME],
+            docker_sensor,
+            config[CONF_UNIQUE_ID],
+        )
+        for docker_sensor in DOCKER_SENSORS_SUM
+    )
 
     async_add_entities(sensors)
 
@@ -153,6 +153,9 @@ class DockerSensor(ComponentEntity, SensorEntity):
     # ------------------------------------------------------
     async def async_added_to_hass(self) -> None:
         """When entity is added to hass."""
+
+        await super().async_added_to_hass()
+
         self.async_on_remove(
             self.coordinator.async_add_listener(self.async_write_ha_state)
         )

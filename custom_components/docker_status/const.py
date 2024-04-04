@@ -7,7 +7,7 @@ LOGGER: Logger = getLogger(__name__)
 
 DOMAIN = "docker_status"
 DOMAIN_NAME = "Docker status"
-DEFAULT_SCAN_INTERVAL = 1
+DEFAULT_SCAN_INTERVAL = 5
 DEFAULT_CHECK_FOR_UPDATED_IMAGES = 6
 
 CONF_DOCKER_BASE_NAME = "docker_base_name"

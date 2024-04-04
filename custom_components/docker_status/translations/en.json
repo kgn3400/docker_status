@@ -33,6 +33,7 @@
       }
     }
   },
+
   "options": {
     "error": {
       "base_url_error": "Docker engine couldn't be reached",
@@ -81,6 +82,17 @@
           "check_for_updated_images_hours": "Look for updated images"
         }
       }
+    }
+  },
+
+  "services": {
+    "update": {
+      "description": "Update docker status information.",
+      "name": "Update"
+    },
+    "prune_images": {
+      "description": "Prune unused docker images.",
+      "name": "Prune images"
     }
   }
 }

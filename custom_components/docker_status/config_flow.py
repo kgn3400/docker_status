@@ -44,10 +44,11 @@ from .const import (
 
 DOCKER_BASE_SETUP = {
     vol.Required(
-        CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL  #  type:ignore
+        CONF_SCAN_INTERVAL,
+        default=DEFAULT_SCAN_INTERVAL,  #  type:ignore
     ): NumberSelector(
         NumberSelectorConfig(
-            min=1, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="Minutes"
+            min=5, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="Minutes"
         )
     ),
     vol.Required(
@@ -234,7 +235,8 @@ DATA_SCHEMA_EDIT_DOCKER_SENSOR = vol.Schema(DOCKER_SENSOR_SETUP)
 DATA_SCHEMA_DOCKER_SENSOR = vol.Schema(
     {
         vol.Required(
-            CONF_DOCKER_ENV_SENSOR_NAME, default=""  #  type:ignore
+            CONF_DOCKER_ENV_SENSOR_NAME,
+            default="",  #  type:ignore
         ): TextSelector(),
         **DOCKER_SENSOR_SETUP,
     }

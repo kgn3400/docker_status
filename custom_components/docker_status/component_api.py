@@ -1,6 +1,7 @@
 """Component api."""
 
 from dataclasses import dataclass
+from datetime import timedelta
 from functools import partial
 
 import docker
@@ -10,6 +11,7 @@ from docker.models.images import Image
 from docker.models.volumes import Volume
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
@@ -69,13 +71,15 @@ class ComponentApi:
     async def async_update_service(self, call: ServiceCall) -> None:
         """Update via service."""
 
-        await self.async_update_sensors_data()
+        # await self.async_update_sensors_data()
+        await self.coordinator.async_request_refresh()
 
     # -------------------------------------------------------------------
     async def async_prune_images_service(self, call: ServiceCall) -> None:
         """Prune via service."""
         await self.async_prune_images()
-        await self.async_update_sensors_data(False)
+        await self.coordinator.async_request_refresh()
+        # await self.async_update_sensors_data(False)
 
     # -------------------------------------------------------------------
     async def async_update(self) -> None:
@@ -86,6 +90,9 @@ class ComponentApi:
             self.first_time = False
             await self.async_update_sensors_data(False)
         else:
+            self.coordinator.update_interval = timedelta(
+                minutes=self.entry.options.get(CONF_SCAN_INTERVAL, 5)
+            )
             await self.async_update_sensors_data()
 
     # ------------------------------------------------------------------

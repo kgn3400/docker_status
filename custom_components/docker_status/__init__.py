@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_SCAN_INTERVAL, Platform
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
@@ -30,7 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass,
         LOGGER,
         name=DOMAIN,
-        update_interval=timedelta(minutes=entry.options.get(CONF_SCAN_INTERVAL, 1)),
+        update_interval=timedelta(minutes=1),
         update_method=component_api.async_update,
     )
 
