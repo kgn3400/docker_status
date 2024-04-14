@@ -1,4 +1,11 @@
 {
+  "entity": {
+    "sensor": {
+      "docker_status": {
+        "default": "mdi:docker"
+      }
+    }
+  },
   "services": {
     "update": "mdi:update",
     "prune_images": "mdi:harddisk-remove"

@@ -1,4 +1,5 @@
 """Constants for Scrape integration."""
+
 from __future__ import annotations
 
 from logging import Logger, getLogger
@@ -6,6 +7,7 @@ from logging import Logger, getLogger
 LOGGER: Logger = getLogger(__name__)
 
 DOMAIN = "docker_status"
+TRANSLATION_KEY = DOMAIN
 DOMAIN_NAME = "Docker status"
 DEFAULT_SCAN_INTERVAL = 5
 DEFAULT_CHECK_FOR_UPDATED_IMAGES = 6

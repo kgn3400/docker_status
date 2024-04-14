@@ -1,4 +1,11 @@
 {
+  "title": "Docker status",
+  "entity_component": {
+    "_": {
+      "name": "Docker status"
+    }
+  },
+
   "config": {
     "abort": {
       "already_configured": "Account is already configured"

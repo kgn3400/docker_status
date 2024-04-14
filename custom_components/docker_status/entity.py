@@ -1,4 +1,5 @@
 """Base entity for the Docker status integration."""
+
 from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry
@@ -31,6 +32,6 @@ class ComponentEntity(CoordinatorEntity[DataUpdateCoordinator], Entity):
             identifiers={(DOMAIN, DOMAIN_NAME)},
             manufacturer="KGN",
             suggested_area="",
-            sw_version="1.0.4",
+            sw_version="1.0.7",
             name=DOMAIN_NAME,
         )

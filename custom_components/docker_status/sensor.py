@@ -1,4 +1,5 @@
 """Support for Docker status."""
+
 from __future__ import annotations
 
 from homeassistant.components.sensor import (  # SensorDeviceClass,; SensorEntityDescription,
@@ -19,6 +20,7 @@ from .const import (
     DOCKER_SENSORS,
     DOCKER_SENSORS_SUM,
     DOMAIN,
+    TRANSLATION_KEY,
 )
 from .entity import ComponentEntity
 
@@ -41,6 +43,7 @@ async def async_setup_entry(
     for sensor in config[CONF_SENSORS]:
         sensors.extend(
             DockerSensor(
+                hass,
                 coordinator,
                 entry,
                 component_api,
@@ -76,6 +79,7 @@ class DockerSensor(ComponentEntity, SensorEntity):
     # ------------------------------------------------------
     def __init__(
         self,
+        hass: HomeAssistant,
         coordinator: DataUpdateCoordinator,
         entry: ConfigEntry,
         component_api: ComponentApi,
@@ -87,12 +91,15 @@ class DockerSensor(ComponentEntity, SensorEntity):
         """Docker sensor."""
         super().__init__(coordinator, entry)
 
+        self.hass: HomeAssistant = hass
         self.component_api = component_api
         self.coordinator = coordinator
         self.env_name = sensor_env_name
         self.sensor_type: str = sensor_type
         self.engine_url = sensor_engine_url
         self._unique_id = sensor_unigue_id
+
+        self.translation_key = TRANSLATION_KEY
 
     # ------------------------------------------------------
     @property
@@ -101,10 +108,10 @@ class DockerSensor(ComponentEntity, SensorEntity):
         return f"{self.env_name} {self.sensor_type}"
 
     # ------------------------------------------------------
-    @property
-    def icon(self) -> str:
-        """Icon."""
-        return "mdi:docker"
+    # @property
+    # def icon(self) -> str:
+    #     """Icon."""
+    #     return "mdi:docker"
 
     # ------------------------------------------------------
     @property
@@ -185,6 +192,8 @@ class DockerSensorSum(ComponentEntity, SensorEntity):
         self.sensor_type: str = sensor_type
         self.sensor_unique_id = sensor_unigue_id
 
+        self.translation_key = TRANSLATION_KEY
+
     # ------------------------------------------------------
     @property
     def name(self) -> str:
@@ -192,10 +201,10 @@ class DockerSensorSum(ComponentEntity, SensorEntity):
         return f"{self._name} {self.sensor_type} sum"
 
     # ------------------------------------------------------
-    @property
-    def icon(self) -> str:
-        """Icon."""
-        return "mdi:docker"
+    # @property
+    # def icon(self) -> str:
+    #     """Icon."""
+    #     return "mdi:docker"
 
     # ------------------------------------------------------
     @property
