@@ -4,7 +4,7 @@
 ![GitHub all releases](https://img.shields.io/github/downloads/kgn3400/docker_status/total)
 ![GitHub last commit](https://img.shields.io/github/last-commit/kgn3400/docker_status)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/kgn3400/docker_status)
-[![Validate% with hassfest](https://github.com/kgn3400/docker_status/workflows/Validate%20with%20hassfest/badge.svg)](https://github.com/kgn3400/docker_status/actions/workflows/code-validate.yaml)
+[![Validate% with hassfest](https://github.com/kgn3400/message_log/workflows/Validate%20with%20hassfest/badge.svg)](https://github.com/kgn3400/docker_status/actions/workflows/code-validate.yaml)
 
 The Docker status integration allows you to monitor multiple Docker and container installations. Getting the status/statistics of your containers and images.
 
