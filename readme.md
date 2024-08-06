@@ -19,6 +19,6 @@ Or click
 
 Configuration is setup via UI in Home assistant. To add one, go to [Settings > Devices & Services](https://my.home-assistant.io/redirect/integrations) and click the add button. Next choose the [Docker status](https://my.home-assistant.io/redirect/config_flow_start?domain=docker_status) option.
 
-## Services
+## Actions
 
-Available services: __prune_images__ and __update__
+Available actions: __prune_images__ and __update__
