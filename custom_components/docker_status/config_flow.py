@@ -1,4 +1,5 @@
 """Adds config flow for Docker status integration."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -21,6 +22,7 @@ from homeassistant.helpers.schema_config_entry_flow import (
     SchemaFlowMenuStep,
 )
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -33,6 +35,7 @@ from .const import (
     CONF_CHECK_FOR_IMAGES_UPDATES,
     CONF_CHECK_FOR_UPDATED_IMAGES_HOURS,
     CONF_DOCKER_BASE_NAME,
+    CONF_DOCKER_BASE_NAME_USE_IN_SENSOR_NAME,
     CONF_DOCKER_ENGINE_URL,
     CONF_DOCKER_ENV_SENSOR_NAME,
     CONF_INDEX,
@@ -45,7 +48,7 @@ from .const import (
 DOCKER_BASE_SETUP = {
     vol.Required(
         CONF_SCAN_INTERVAL,
-        default=DEFAULT_SCAN_INTERVAL,  #  type:ignore
+        default=DEFAULT_SCAN_INTERVAL,
     ): NumberSelector(
         NumberSelectorConfig(
             min=5, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="Minutes"
@@ -53,7 +56,7 @@ DOCKER_BASE_SETUP = {
     ),
     vol.Required(
         CONF_CHECK_FOR_UPDATED_IMAGES_HOURS,
-        default=DEFAULT_CHECK_FOR_UPDATED_IMAGES,  #  type:ignore
+        default=DEFAULT_CHECK_FOR_UPDATED_IMAGES,
     ): NumberSelector(
         NumberSelectorConfig(
             min=1, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="Hours"
@@ -65,7 +68,7 @@ DOCKER_SENSOR_SETUP = {
     vol.Required(CONF_DOCKER_ENGINE_URL): TextSelector(
         TextSelectorConfig(type=TextSelectorType.URL)
     ),
-    vol.Required(CONF_CHECK_FOR_IMAGES_UPDATES, default=True): cv.boolean,  # type: ignore
+    vol.Required(CONF_CHECK_FOR_IMAGES_UPDATES, default=True): cv.boolean,
 }
 
 
@@ -226,7 +229,10 @@ async def validate_docker_remove_sensor(
 DATA_SCHEMA_EDIT_DOCKER_BASE = vol.Schema(DOCKER_BASE_SETUP)
 DATA_SCHEMA_DOCKER_BASE = vol.Schema(
     {
-        vol.Required(CONF_DOCKER_BASE_NAME, default=""): TextSelector(),  #  type:ignore
+        vol.Required(CONF_DOCKER_BASE_NAME, default=""): TextSelector(),
+        vol.Required(
+            CONF_DOCKER_BASE_NAME_USE_IN_SENSOR_NAME, default=False
+        ): BooleanSelector(),
         **DOCKER_BASE_SETUP,
     }
 )
@@ -236,7 +242,7 @@ DATA_SCHEMA_DOCKER_SENSOR = vol.Schema(
     {
         vol.Required(
             CONF_DOCKER_ENV_SENSOR_NAME,
-            default="",  #  type:ignore
+            default="",
         ): TextSelector(),
         **DOCKER_SENSOR_SETUP,
     }

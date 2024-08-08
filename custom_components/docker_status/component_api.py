@@ -105,7 +105,7 @@ class ComponentApi:
         for env_sensor in self.env_sensors.values():
             containers: list[Container] = await self.hass.async_add_executor_job(
                 env_sensor.client.containers.list, True
-            )  # type: ignore
+            )
 
             await self.async_update_container_data(env_sensor, containers, get_job_info)
 
@@ -197,7 +197,7 @@ class ComponentApi:
         env_sensor.images_unused.clear()
         images: list[Image] = await self.hass.async_add_executor_job(
             env_sensor.client.images.list
-        )  # type: ignore
+        )
 
         env_sensor.values[SENSOR_IMAGES] = len(images)
         env_sensor.values[SENSOR_IMAGES_DANGLING] = len(
@@ -212,7 +212,7 @@ class ComponentApi:
             used: bool = False
 
             for container in containers:
-                if image.id == container.attrs.get("Image", ""):  # type: ignore
+                if image.id == container.attrs.get("Image", ""):
                     used = True
                     tmp_count += 1
                     break
@@ -234,7 +234,7 @@ class ComponentApi:
 
         volumes: list[Volume] = await self.hass.async_add_executor_job(
             env_sensor.client.volumes.list
-        )  # type: ignore
+        )
 
         env_sensor.values[SENSOR_VOLUMES] = len(volumes)
 
@@ -244,7 +244,7 @@ class ComponentApi:
             volume_is_used = False
 
             for container in containers:
-                for mount in container.attrs["Mounts"]:  # type:ignore
+                for mount in container.attrs["Mounts"]:
                     if (
                         mount.get("Type", "") == "volume"
                         and mount.get("Name", "") == volume.name
@@ -327,7 +327,7 @@ class ComponentApi:
 
         if sensor_type == SENSOR_CONTAINERS_RUNNING:
             return {"Running": self.env_sensors[env_sensor_name].containers_running}
-        elif sensor_type == SENSOR_CONTAINERS_STOPPED:
+        elif sensor_type == SENSOR_CONTAINERS_STOPPED:  # noqa: RET505
             return {"Stopped": self.env_sensors[env_sensor_name].containers_stopped}
         elif sensor_type == SENSOR_IMAGES_UNUSED:
             return {"Unused": self.env_sensors[env_sensor_name].images_unused}

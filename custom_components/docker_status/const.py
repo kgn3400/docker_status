@@ -13,6 +13,7 @@ DEFAULT_SCAN_INTERVAL = 5
 DEFAULT_CHECK_FOR_UPDATED_IMAGES = 6
 
 CONF_DOCKER_BASE_NAME = "docker_base_name"
+CONF_DOCKER_BASE_NAME_USE_IN_SENSOR_NAME = "docker_base_name_use_in_sensor_name"
 CONF_DOCKER_ENGINE_URL = "docker_engine_url"
 CONF_DOCKER_ENV_SENSOR_NAME = "docker_env_sensor_name"
 CONF_CHECK_FOR_UPDATED_IMAGES_HOURS = "check_for_updated_images_hours"
@@ -22,8 +23,8 @@ CONF_CHECK_FOR_IMAGES_UPDATES = "check_for_images_updates"
 
 SENSOR_CONTAINERS_RUNNING = "Containers running"
 SENSOR_CONTAINERS_STOPPED = "Containers stopped"
-SENSOR_CONTAINERS_CPU_PERCENT = "Containers CPU persent"
-SENSOR_CONTAINERS_MEMORY_USAGE = "Containers memory usage"
+SENSOR_CONTAINERS_CPU_PERCENT = "Containers CPU %"
+SENSOR_CONTAINERS_MEMORY_USAGE = "Containers mem. usage"
 SENSOR_IMAGES = "Images"
 SENSOR_IMAGES_UNUSED = "Images unused"
 SENSOR_IMAGES_DANGLING = "Images dangling"

@@ -14,6 +14,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .component_api import ComponentApi
 from .const import (
     CONF_DOCKER_BASE_NAME,
+    CONF_DOCKER_BASE_NAME_USE_IN_SENSOR_NAME,
     CONF_DOCKER_ENGINE_URL,
     CONF_DOCKER_ENV_SENSOR_NAME,
     CONF_SENSORS,
@@ -61,7 +62,7 @@ async def async_setup_entry(
             coordinator,
             entry,
             component_api,
-            config[CONF_DOCKER_BASE_NAME],
+            config.get(CONF_DOCKER_BASE_NAME, ""),
             docker_sensor,
             config[CONF_UNIQUE_ID],
         )
@@ -105,7 +106,7 @@ class DockerSensor(ComponentEntity, SensorEntity):
     @property
     def name(self) -> str:
         """Name."""
-        return f"{self.env_name} {self.sensor_type}"
+        return f"{self.env_name} - {self.sensor_type}"
 
     # ------------------------------------------------------
     # @property
@@ -187,6 +188,7 @@ class DockerSensorSum(ComponentEntity, SensorEntity):
         super().__init__(coordinator, entry)
 
         self.component_api = component_api
+        self.entry: ConfigEntry = entry
         self.coordinator = coordinator
         self._name = sensor_name
         self.sensor_type: str = sensor_type
@@ -198,7 +200,11 @@ class DockerSensorSum(ComponentEntity, SensorEntity):
     @property
     def name(self) -> str:
         """Name."""
-        return f"{self._name} {self.sensor_type} sum"
+        return (
+            f"{self._name} summary - {self.sensor_type}"
+            if self.entry.options.get(CONF_DOCKER_BASE_NAME_USE_IN_SENSOR_NAME, False)
+            else f"Summary - {self.sensor_type}"
+        )
 
     # ------------------------------------------------------
     # @property

@@ -5,30 +5,30 @@
       "name": "Docker status"
     }
   },
-
   "config": {
     "abort": {
-      "already_configured": "Account is already configured"
+      "already_configured": "Device is already configured"
     },
     "error": {
       "base_url_error": "Docker engine couldn't be reached",
-      "sensor_name_error": "Enviroment sensor name allready exists"
+      "sensor_name_error": "Environment sensor name already exists"
     },
     "step": {
       "sensor": {
         "data": {
-          "docker_env_sensor_name": "Docker enviroment sensor name",
+          "docker_env_sensor_name": "Docker environment sensor name",
           "docker_engine_url": "Url",
           "check_for_images_updates": "Check for images updates"
         },
         "data_description": {
-          "docker_env_sensor_name": "Friendly name of enviroment sensor",
+          "docker_env_sensor_name": "Friendly name of environment sensor",
           "docker_engine_url": "Docker engine url"
         }
       },
       "user": {
         "data": {
           "docker_base_name": "Configuration name",
+          "docker_base_name_use_in_sensor_name": "Use configuration name in sum sensor names",
           "scan_interval": "Scan interval",
           "check_for_updated_images_hours": "Check for updated images"
         },
@@ -40,32 +40,31 @@
       }
     }
   },
-
   "options": {
     "error": {
       "base_url_error": "Docker engine couldn't be reached",
-      "sensor_name_error": "Enviroment sensor name allready exists"
+      "sensor_name_error": "Environment sensor name already exists"
     },
     "step": {
       "add_docker_sensor": {
         "data": {
-          "docker_env_sensor_name": "Docker enviroment sensor name",
+          "docker_env_sensor_name": "Docker environment sensor name",
           "docker_engine_url": "Url",
           "check_for_images_updates": "Check for images updates"
         },
         "data_description": {
-          "docker_env_sensor_name": "Friendly name of enviroment sensor",
+          "docker_env_sensor_name": "Friendly name of environment sensor",
           "docker_engine_url": "Docker engine url"
         }
       },
       "edit_docker_sensor": {
         "data": {
-          "docker_env_sensor_name": "Docker enviroment sensor name",
+          "docker_env_sensor_name": "Docker environment sensor name",
           "docker_engine_url": "Url",
           "check_for_images_updates": "Check for images updates"
         },
         "data_description": {
-          "docker_env_sensor_name": "Friendly name of enviroment sensor",
+          "docker_env_sensor_name": "Friendly name of environment sensor",
           "docker_engine_url": "Docker engine url"
         }
       },
@@ -80,6 +79,7 @@
       "docker_base_setup": {
         "data": {
           "docker_base_name": "Configuration name",
+          "docker_base_name_use_in_sensor_name": "Use configuration name in sum sensor names",
           "scan_interval": "Scan interval",
           "check_for_updated_images_hours": "Check for updated images"
         },
@@ -91,7 +91,6 @@
       }
     }
   },
-
   "services": {
     "update": {
       "description": "Update docker status information.",
