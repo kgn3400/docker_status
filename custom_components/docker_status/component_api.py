@@ -19,6 +19,7 @@ from .const import (
     CONF_DOCKER_ENGINE_URL,
     CONF_DOCKER_ENV_SENSOR_NAME,
     CONF_SENSORS,
+    DOMAIN,
     LOGGER,
     SENSOR_CONTAINERS_CPU_PERCENT,
     SENSOR_CONTAINERS_MEMORY_USAGE,
@@ -66,6 +67,19 @@ class ComponentApi:
         self.client: docker.DockerClient
         self.first_time: bool = True
         self.env_sensors: dict[str, DockerData] = {}
+
+        """Setup the actions for the docker integration."""
+        hass.services.async_register(
+            DOMAIN,
+            "update",
+            self.async_update_service,
+        )
+
+        hass.services.async_register(
+            DOMAIN,
+            "prune_images",
+            self.async_prune_images_service,
+        )
 
     # -------------------------------------------------------------------
     async def async_update_service(self, call: ServiceCall) -> None:

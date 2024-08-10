@@ -93,7 +93,7 @@
   },
   "services": {
     "update": {
-      "description": "Update docker status information.",
+      "description": "Opdater docker status information.",
       "name": "Opdater"
     },
     "prune_images": {
