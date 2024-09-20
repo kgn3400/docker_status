@@ -11,9 +11,10 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/kgn3400/docker_status/issues",
   "requirements": [
-    "docker==7.1.0"
+    "docker==7.1.0",
+    "paramiko==3.5.0"
   ],
   "ssdp": [],
-  "version": "1.0.9",
+  "version": "1.0.10",
   "zeroconf": []
 }
