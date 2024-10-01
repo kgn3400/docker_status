@@ -18,7 +18,7 @@ from .const import DOMAIN, DOMAIN_NAME
 class ComponentEntity(CoordinatorEntity[DataUpdateCoordinator], Entity):
     """Defines a Docker status entity."""
 
-    _attr_has_entity_name = True
+    _attr_has_entity_name = False
 
     def __init__(
         self,

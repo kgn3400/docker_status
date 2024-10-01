@@ -7,7 +7,11 @@
     }
   },
   "services": {
-    "update": "mdi:update",
-    "prune_images": "mdi:harddisk-remove"
+    "update": {
+      "service": "mdi:update"
+    },
+    "prune_images": {
+      "service": "mdi:harddisk-remove"
+    }
   }
 }
