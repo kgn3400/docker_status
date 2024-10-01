@@ -48,6 +48,7 @@ async def async_setup_entry(
                 coordinator,
                 entry,
                 component_api,
+                config.get(CONF_DOCKER_BASE_NAME, ""),
                 sensor[CONF_DOCKER_ENV_SENSOR_NAME],
                 docker_sensor,
                 sensor[CONF_DOCKER_ENGINE_URL],
@@ -84,6 +85,7 @@ class DockerSensor(ComponentEntity, SensorEntity):
         coordinator: DataUpdateCoordinator,
         entry: ConfigEntry,
         component_api: ComponentApi,
+        docker_base_name: str,
         sensor_env_name: str,
         sensor_type: str,
         sensor_engine_url: str,
@@ -95,6 +97,8 @@ class DockerSensor(ComponentEntity, SensorEntity):
         self.hass: HomeAssistant = hass
         self.component_api = component_api
         self.coordinator = coordinator
+        self.entry: ConfigEntry = entry
+        self.docker_base_name = docker_base_name
         self.env_name = sensor_env_name
         self.sensor_type: str = sensor_type
         self.engine_url = sensor_engine_url
@@ -106,7 +110,12 @@ class DockerSensor(ComponentEntity, SensorEntity):
     @property
     def name(self) -> str:
         """Name."""
-        return f"{self.env_name} - {self.sensor_type}"
+
+        return (
+            f"{self.docker_base_name} {self.env_name} - {self.sensor_type}"
+            if self.entry.options.get(CONF_DOCKER_BASE_NAME_USE_IN_SENSOR_NAME, False)
+            else f"{self.env_name} - {self.sensor_type}"
+        )
 
     # ------------------------------------------------------
     # @property
@@ -180,7 +189,7 @@ class DockerSensorSum(ComponentEntity, SensorEntity):
         coordinator: DataUpdateCoordinator,
         entry: ConfigEntry,
         component_api: ComponentApi,
-        sensor_name: str,
+        docker_base_name: str,
         sensor_type: str,
         sensor_unigue_id: str,
     ) -> None:
@@ -190,7 +199,7 @@ class DockerSensorSum(ComponentEntity, SensorEntity):
         self.component_api = component_api
         self.entry: ConfigEntry = entry
         self.coordinator = coordinator
-        self._name = sensor_name
+        self.docker_base_name = docker_base_name
         self.sensor_type: str = sensor_type
         self.sensor_unique_id = sensor_unigue_id
 
@@ -201,7 +210,7 @@ class DockerSensorSum(ComponentEntity, SensorEntity):
     def name(self) -> str:
         """Name."""
         return (
-            f"{self._name} summary - {self.sensor_type}"
+            f"{self.docker_base_name} summary - {self.sensor_type}"
             if self.entry.options.get(CONF_DOCKER_BASE_NAME_USE_IN_SENSOR_NAME, False)
             else f"Summary - {self.sensor_type}"
         )

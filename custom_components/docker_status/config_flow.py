@@ -231,7 +231,7 @@ DATA_SCHEMA_DOCKER_BASE = vol.Schema(
     {
         vol.Required(CONF_DOCKER_BASE_NAME, default=""): TextSelector(),
         vol.Required(
-            CONF_DOCKER_BASE_NAME_USE_IN_SENSOR_NAME, default=False
+            CONF_DOCKER_BASE_NAME_USE_IN_SENSOR_NAME, default=True
         ): BooleanSelector(),
         **DOCKER_BASE_SETUP,
     }

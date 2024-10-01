@@ -28,7 +28,7 @@
       "user": {
         "data": {
           "docker_base_name": "Konfiguration navn",
-          "docker_base_name_use_in_sensor_name": "Brug konfigurations navn i sum sensor navne",
+          "docker_base_name_use_in_sensor_name": "Brug konfigurations navn i sensor navne",
           "scan_interval": "Skan interval",
           "check_for_updated_images_hours": "Tjek for opdateringer af image"
         },
