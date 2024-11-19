@@ -12,9 +12,9 @@
   "issue_tracker": "https://github.com/kgn3400/docker_status/issues",
   "requirements": [
     "docker==7.1.0",
-    "paramiko"
+    "paramiko==3.5.0"
   ],
   "ssdp": [],
-  "version": "1.0.12",
+  "version": "1.0.13",
   "zeroconf": []
 }

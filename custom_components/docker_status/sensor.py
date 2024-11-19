@@ -5,12 +5,11 @@ from __future__ import annotations
 from homeassistant.components.sensor import (  # SensorDeviceClass,; SensorEntityDescription,
     SensorEntity,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_UNIQUE_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
+from . import CommonConfigEntry
 from .component_api import ComponentApi
 from .const import (
     CONF_DOCKER_BASE_NAME,
@@ -20,7 +19,6 @@ from .const import (
     CONF_SENSORS,
     DOCKER_SENSORS,
     DOCKER_SENSORS_SUM,
-    DOMAIN,
     TRANSLATION_KEY,
 )
 from .entity import ComponentEntity
@@ -29,13 +27,13 @@ from .entity import ComponentEntity
 # ------------------------------------------------------
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: CommonConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Entry for Docker status setup."""
-    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+    coordinator = entry.runtime_data.coordinator
 
-    component_api: ComponentApi = hass.data[DOMAIN][entry.entry_id]["component_api"]
+    component_api: ComponentApi = entry.runtime_data.component_api
 
     sensors = []
 
@@ -45,9 +43,7 @@ async def async_setup_entry(
         sensors.extend(
             DockerSensor(
                 hass,
-                coordinator,
                 entry,
-                component_api,
                 config.get(CONF_DOCKER_BASE_NAME, ""),
                 sensor[CONF_DOCKER_ENV_SENSOR_NAME],
                 docker_sensor,
@@ -60,9 +56,7 @@ async def async_setup_entry(
     # -- Sum sensors
     sensors.extend(
         DockerSensorSum(
-            coordinator,
             entry,
-            component_api,
             config.get(CONF_DOCKER_BASE_NAME, ""),
             docker_sensor,
             config[CONF_UNIQUE_ID],
@@ -82,9 +76,7 @@ class DockerSensor(ComponentEntity, SensorEntity):
     def __init__(
         self,
         hass: HomeAssistant,
-        coordinator: DataUpdateCoordinator,
-        entry: ConfigEntry,
-        component_api: ComponentApi,
+        entry: CommonConfigEntry,
         docker_base_name: str,
         sensor_env_name: str,
         sensor_type: str,
@@ -92,12 +84,12 @@ class DockerSensor(ComponentEntity, SensorEntity):
         sensor_unigue_id: str,
     ) -> None:
         """Docker sensor."""
-        super().__init__(coordinator, entry)
+        super().__init__(entry.runtime_data.coordinator, entry)
 
         self.hass: HomeAssistant = hass
-        self.component_api = component_api
-        self.coordinator = coordinator
-        self.entry: ConfigEntry = entry
+        self.component_api: ComponentApi = entry.runtime_data.component_api
+        self.coordinator = entry.runtime_data.coordinator
+        self.entry: CommonConfigEntry = entry
         self.docker_base_name = docker_base_name
         self.env_name = sensor_env_name
         self.sensor_type: str = sensor_type
@@ -186,19 +178,17 @@ class DockerSensorSum(ComponentEntity, SensorEntity):
     # ------------------------------------------------------
     def __init__(
         self,
-        coordinator: DataUpdateCoordinator,
-        entry: ConfigEntry,
-        component_api: ComponentApi,
+        entry: CommonConfigEntry,
         docker_base_name: str,
         sensor_type: str,
         sensor_unigue_id: str,
     ) -> None:
         """Docker sensor sum."""
-        super().__init__(coordinator, entry)
+        super().__init__(entry.runtime_data.coordinator, entry)
 
-        self.component_api = component_api
-        self.entry: ConfigEntry = entry
-        self.coordinator = coordinator
+        self.component_api = entry.runtime_data.component_api
+        self.entry: CommonConfigEntry = entry
+        self.coordinator = entry.runtime_data.coordinator
         self.docker_base_name = docker_base_name
         self.sensor_type: str = sensor_type
         self.sensor_unique_id = sensor_unigue_id
