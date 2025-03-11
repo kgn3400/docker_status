@@ -29,7 +29,7 @@ class ComponentEntity(CoordinatorEntity[DataUpdateCoordinator], Entity):
         super().__init__(coordinator=coordinator)
         self._attr_device_info = DeviceInfo(
             entry_type=DeviceEntryType.SERVICE,
-            identifiers={(DOMAIN, DOMAIN_NAME)},
+            identifiers={(DOMAIN, entry.entry_id)},
             manufacturer="KGN",
             suggested_area="",
             sw_version="1.0",

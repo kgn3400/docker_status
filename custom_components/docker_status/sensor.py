@@ -31,10 +31,6 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Entry for Docker status setup."""
-    coordinator = entry.runtime_data.coordinator
-
-    component_api: ComponentApi = entry.runtime_data.component_api
-
     sensors = []
 
     config = dict(entry.options)
@@ -108,12 +104,6 @@ class DockerSensor(ComponentEntity, SensorEntity):
             if self.entry.options.get(CONF_DOCKER_BASE_NAME_USE_IN_SENSOR_NAME, False)
             else f"{self.env_name} - {self.sensor_type}"
         )
-
-    # ------------------------------------------------------
-    # @property
-    # def icon(self) -> str:
-    #     """Icon."""
-    #     return "mdi:docker"
 
     # ------------------------------------------------------
     @property

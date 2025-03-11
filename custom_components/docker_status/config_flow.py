@@ -30,6 +30,7 @@ from homeassistant.helpers.selector import (
     TextSelectorConfig,
     TextSelectorType,
 )
+from homeassistant.util.uuid import random_uuid_hex
 
 from .const import (
     CONF_CHECK_FOR_IMAGES_UPDATES,
@@ -44,32 +45,6 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
-
-DOCKER_BASE_SETUP = {
-    vol.Required(
-        CONF_SCAN_INTERVAL,
-        default=DEFAULT_SCAN_INTERVAL,
-    ): NumberSelector(
-        NumberSelectorConfig(
-            min=5, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="Minutes"
-        )
-    ),
-    vol.Required(
-        CONF_CHECK_FOR_UPDATED_IMAGES_HOURS,
-        default=DEFAULT_CHECK_FOR_UPDATED_IMAGES,
-    ): NumberSelector(
-        NumberSelectorConfig(
-            min=1, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="Hours"
-        )
-    ),
-}
-
-DOCKER_SENSOR_SETUP = {
-    vol.Required(CONF_DOCKER_ENGINE_URL): TextSelector(
-        TextSelectorConfig(type=TextSelectorType.URL)
-    ),
-    vol.Required(CONF_CHECK_FOR_IMAGES_UPDATES, default=True): cv.boolean,
-}
 
 
 # ------------------------------------------------------------------
@@ -226,6 +201,46 @@ async def validate_docker_remove_sensor(
     return {}
 
 
+# ------------------------------------------------------------------
+async def config_remote_component_schema(
+    handler: SchemaCommonFlowHandler,
+) -> vol.Schema:
+    """Return schema for the sensor config step."""
+
+    if handler.parent_handler.unique_id is None:
+        await handler.parent_handler.async_set_unique_id(random_uuid_hex())
+        handler.parent_handler._abort_if_unique_id_configured()  # noqa: SLF001
+
+    return DATA_SCHEMA_DOCKER_BASE
+
+
+DOCKER_BASE_SETUP = {
+    vol.Required(
+        CONF_SCAN_INTERVAL,
+        default=DEFAULT_SCAN_INTERVAL,
+    ): NumberSelector(
+        NumberSelectorConfig(
+            min=5, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="Minutes"
+        )
+    ),
+    vol.Required(
+        CONF_CHECK_FOR_UPDATED_IMAGES_HOURS,
+        default=DEFAULT_CHECK_FOR_UPDATED_IMAGES,
+    ): NumberSelector(
+        NumberSelectorConfig(
+            min=1, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="Hours"
+        )
+    ),
+}
+
+DOCKER_SENSOR_SETUP = {
+    vol.Required(CONF_DOCKER_ENGINE_URL): TextSelector(
+        TextSelectorConfig(type=TextSelectorType.URL)
+    ),
+    vol.Required(CONF_CHECK_FOR_IMAGES_UPDATES, default=True): cv.boolean,
+}
+
+
 DATA_SCHEMA_EDIT_DOCKER_BASE = vol.Schema(DOCKER_BASE_SETUP)
 DATA_SCHEMA_DOCKER_BASE = vol.Schema(
     {
@@ -250,7 +265,7 @@ DATA_SCHEMA_DOCKER_SENSOR = vol.Schema(
 
 CONFIG_FLOW = {
     "user": SchemaFlowFormStep(
-        schema=DATA_SCHEMA_DOCKER_BASE,
+        schema=config_remote_component_schema,
         next_step="sensor",
         validate_user_input=validate_docker_base_setup,
     ),
