@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import timedelta
-from functools import partial
+from typing import Any
 
 import docker
 from docker import errors
@@ -31,6 +31,7 @@ from .const import (
     SENSOR_VOLUMES,
     SENSOR_VOLUMES_UNUSED,
 )
+from .hass_util import async_hass_add_executor_job
 
 
 # ------------------------------------------------------------------
@@ -91,7 +92,7 @@ class ComponentApi:
     # -------------------------------------------------------------------
     async def async_prune_images_service(self, call: ServiceCall) -> None:
         """Prune via service."""
-        await self.async_prune_images()
+        await self.prune_images()
         await self.coordinator.async_request_refresh()
         # await self.async_update_sensors_data(False)
 
@@ -110,6 +111,13 @@ class ComponentApi:
             await self.async_update_sensors_data()
 
     # ------------------------------------------------------------------
+    @async_hass_add_executor_job()
+    def list_containers(self, env_sensor: DockerData) -> Any:
+        """List containers."""
+
+        return env_sensor.client.containers.list(True)
+
+    # ------------------------------------------------------------------
     async def async_update_sensors_data(
         self,
         get_job_info: bool = True,
@@ -117,9 +125,7 @@ class ComponentApi:
         """Update data."""
 
         for env_sensor in self.env_sensors.values():
-            containers: list[Container] = await self.hass.async_add_executor_job(
-                env_sensor.client.containers.list, True
-            )
+            containers: list[Container] = await self.list_containers(env_sensor)
 
             await self.async_update_container_data(env_sensor, containers, get_job_info)
 
@@ -128,13 +134,19 @@ class ComponentApi:
             await self.async_update_volume_data(env_sensor, containers)
 
     # ------------------------------------------------------------------
-    async def async_prune_images(self) -> None:
+    @async_hass_add_executor_job()
+    async def prune_images(self) -> None:
         """Prune images."""
 
         for env_sensor in self.env_sensors.values():
-            await self.hass.async_add_executor_job(
-                env_sensor.client.images.prune, {"dangling": False}
-            )
+            env_sensor.client.images.prune({"dangling": False})
+
+    # ------------------------------------------------------------------
+    @async_hass_add_executor_job()
+    def container_stats(self, container: Container) -> Any:
+        """Get stats for container."""
+
+        return container.stats(decode=False, stream=False)
 
     # ------------------------------------------------------------------
     async def async_update_container_data(
@@ -174,9 +186,7 @@ class ComponentApi:
             env_sensor.containers_running.append(container.name)
 
             if get_job_info:
-                stats = await self.hass.async_add_executor_job(
-                    partial(container.stats, decode=False, stream=False)
-                )
+                stats = await self.container_stats(container)
 
                 cpu_delta = float(
                     stats["cpu_stats"]["cpu_usage"]["total_usage"]
@@ -204,20 +214,25 @@ class ComponentApi:
             env_sensor.values_uom[SENSOR_CONTAINERS_MEMORY_USAGE] = uom
 
     # ------------------------------------------------------------------
+    @async_hass_add_executor_job()
+    def client_image_list(
+        self, env_sensor: DockerData, name=None, all=False, filters=None
+    ) -> Any:
+        """Client image list."""
+
+        return env_sensor.client.images.list(name, all, filters)
+
+    # ------------------------------------------------------------------
     async def async_update_image_data(
         self, env_sensor: DockerData, containers: list[Container]
     ) -> None:
         """Update image data."""
         env_sensor.images_unused.clear()
-        images: list[Image] = await self.hass.async_add_executor_job(
-            env_sensor.client.images.list
-        )
+        images: list[Image] = await self.client_image_list(env_sensor)
 
         env_sensor.values[SENSOR_IMAGES] = len(images)
         env_sensor.values[SENSOR_IMAGES_DANGLING] = len(
-            await self.hass.async_add_executor_job(
-                env_sensor.client.images.list, None, False, {"dangling": True}
-            )
+            await self.client_image_list(env_sensor, None, False, {"dangling": True})
         )
 
         tmp_count: int = 0
@@ -239,6 +254,13 @@ class ComponentApi:
         )
 
     # ------------------------------------------------------------------
+    @async_hass_add_executor_job()
+    def client_volumes_list(self, env_sensor: DockerData) -> Any:
+        """Client image list."""
+
+        return env_sensor.client.volumes.list()
+
+    # ------------------------------------------------------------------
     async def async_update_volume_data(
         self, env_sensor: DockerData, containers: list[Container]
     ) -> None:
@@ -246,9 +268,7 @@ class ComponentApi:
 
         env_sensor.volumes_unused.clear()
 
-        volumes: list[Volume] = await self.hass.async_add_executor_job(
-            env_sensor.client.volumes.list
-        )
+        volumes: list[Volume] = await self.client_volumes_list(env_sensor)
 
         env_sensor.values[SENSOR_VOLUMES] = len(volumes)
 
@@ -277,6 +297,13 @@ class ComponentApi:
         )
 
     # ------------------------------------------------------------------
+    @async_hass_add_executor_job()
+    def docker_client(self, base_url: str) -> Any:
+        """Get docker client."""
+
+        return docker.DockerClient(base_url)
+
+    # ------------------------------------------------------------------
     async def async_init(self) -> None:
         """Init."""
         config = dict(self.entry.options)
@@ -294,9 +321,8 @@ class ComponentApi:
             tmp_data.values_uom[SENSOR_CONTAINERS_MEMORY_USAGE] = "B"
 
             try:
-                tmp_data.client = await self.hass.async_add_executor_job(
-                    docker.DockerClient, tmp_data.engine_url
-                )
+                tmp_data.client = await self.docker_client(tmp_data.engine_url)
+
             except errors.DockerException:
                 LOGGER.exception("Error creating docker client")
 

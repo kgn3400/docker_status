@@ -12,7 +12,6 @@ import voluptuous as vol
 
 # from homeassistant.components.sensor import DOMAIN as CONF_SENSORS
 from homeassistant.const import CONF_SCAN_INTERVAL, CONF_UNIQUE_ID
-from homeassistant.core import async_get_hass
 from homeassistant.helpers import config_validation as cv, entity_registry as er
 from homeassistant.helpers.schema_config_entry_flow import (
     SchemaCommonFlowHandler,
@@ -45,6 +44,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
+from .hass_util import async_hass_add_executor_job
 
 
 # ------------------------------------------------------------------
@@ -66,14 +66,13 @@ async def validate_docker_base_edit(
 
 
 # ------------------------------------------------------------------
-async def validate_docker_url(base_url: str) -> None:
+@async_hass_add_executor_job()
+def validate_docker_url(base_url: str) -> None:
     """Validate base url input."""
-    hass = async_get_hass()
     try:
-        client: docker.DockerClient = await hass.async_add_executor_job(
-            docker.DockerClient, base_url
-        )
+        client: docker.DockerClient = docker.DockerClient(base_url)
         client.close()
+
     except errors.DockerException as exc:
         raise SchemaFlowError("base_url_error") from exc
 
@@ -202,7 +201,7 @@ async def validate_docker_remove_sensor(
 
 
 # ------------------------------------------------------------------
-async def config_remote_component_schema(
+async def config_docker_base_setup_schema(
     handler: SchemaCommonFlowHandler,
 ) -> vol.Schema:
     """Return schema for the sensor config step."""
@@ -265,7 +264,7 @@ DATA_SCHEMA_DOCKER_SENSOR = vol.Schema(
 
 CONFIG_FLOW = {
     "user": SchemaFlowFormStep(
-        schema=config_remote_component_schema,
+        schema=config_docker_base_setup_schema,
         next_step="sensor",
         validate_user_input=validate_docker_base_setup,
     ),
