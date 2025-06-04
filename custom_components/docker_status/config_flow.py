@@ -26,8 +26,6 @@ from homeassistant.helpers.selector import (
     NumberSelectorConfig,
     NumberSelectorMode,
     TextSelector,
-    TextSelectorConfig,
-    TextSelectorType,
 )
 from homeassistant.util.uuid import random_uuid_hex
 
@@ -235,9 +233,7 @@ DOCKER_BASE_SETUP = {
 }
 
 DOCKER_SENSOR_SETUP = {
-    vol.Required(CONF_DOCKER_ENGINE_URL): TextSelector(
-        TextSelectorConfig(type=TextSelectorType.URL)
-    ),
+    vol.Required(CONF_DOCKER_ENGINE_URL): TextSelector(),
     vol.Required(CONF_CHECK_FOR_IMAGES_UPDATES, default=True): cv.boolean,
 }
 
