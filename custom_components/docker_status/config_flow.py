@@ -43,6 +43,7 @@ from .const import (
     DEFAULT_CHECK_FOR_UPDATED_IMAGES,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    LOGGER,
 )
 from .hass_util import async_hass_add_executor_job
 
@@ -74,6 +75,7 @@ def validate_docker_url(base_url: str) -> None:
         client.close()
 
     except errors.DockerException as exc:
+        LOGGER.error("Error creating docker client: %s", exc)
         raise SchemaFlowError("base_url_error") from exc
 
 

@@ -7,6 +7,10 @@
 [![Validate% with hassfest](https://github.com/kgn3400/docker_status/workflows/Validate%20with%20hassfest/badge.svg)](https://github.com/kgn3400/docker_status/actions/workflows/hassfest.yaml)
 
 The Docker status integration allows you to monitor multiple Docker and container installations. Getting the status/statistics of your containers and images.
+
+To enable remote access to the docker host, [check this guide](https://docs.docker.com/engine/daemon/remote-access/)
+
+
 Unused images can been pruned via service __prune_images__.
 
 For installation instructions until the Docker status integrations is part of HACS, [see this guide](https://hacs.xyz/docs/faq/custom_repositories).
