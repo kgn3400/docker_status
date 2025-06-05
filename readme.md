@@ -8,6 +8,7 @@
 
 # Docker status
 
+<br>
 The Docker status integration allows you to monitor multiple Docker and container installations. Getting the status/statistics of your containers and images.
 
 To enable remote access to the docker host, [check this guide](https://docs.docker.com/engine/daemon/remote-access/)
