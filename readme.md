@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD041 -->
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/kgn3400/docker_status)
 ![GitHub all releases](https://img.shields.io/github/downloads/kgn3400/docker_status/total)
 ![GitHub last commit](https://img.shields.io/github/last-commit/kgn3400/docker_status)
@@ -12,7 +13,6 @@
 
 The Docker status integration allows you to monitor multiple Docker and container installations. Getting the status/statistics of your
 containers and images.
-
 
 To enable remote access to the docker host, [check this guide](https://docs.docker.com/engine/daemon/remote-access/)
 
