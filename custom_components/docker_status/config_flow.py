@@ -147,8 +147,8 @@ async def validate_docker_sensor_edit(
     """Update edited sensor."""
     await validate_docker_url(user_input[CONF_DOCKER_ENGINE_URL])
 
-    sensors: list[dict[str, Any]] = handler.options.setdefault(CONF_SENSORS, [])
-    await validate_sensor_name(user_input[CONF_DOCKER_ENV_SENSOR_NAME], sensors)
+    # sensors: list[dict[str, Any]] = handler.options.setdefault(CONF_SENSORS, [])
+    # await validate_sensor_name(user_input[CONF_DOCKER_ENV_SENSOR_NAME], sensors)
 
     #    user_input[CONF_INDEX] = int(user_input[CONF_INDEX])
 

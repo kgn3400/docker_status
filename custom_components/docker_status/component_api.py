@@ -323,8 +323,8 @@ class ComponentApi:
             try:
                 tmp_data.client = await self.docker_client(tmp_data.engine_url)
 
-            except errors.DockerException:
-                LOGGER.exception("Error creating docker client")
+            except errors.DockerException as exc:
+                LOGGER.exception("Error creating docker client %s", exc)
 
             self.env_sensors[tmp_data.sensor_name] = tmp_data
 
