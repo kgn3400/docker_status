@@ -16,11 +16,9 @@ containers and images.
 
 To enable remote access to the docker host, [check this guide](https://docs.docker.com/engine/daemon/remote-access/)
 
-Unused images can been pruned via service __prune_images__.
+Unused images can been pruned via action __prune_images__.
 
 ## Installation
-
-For installation instructions until the Docker status integrations is part of HACS, [see this guide](https://hacs.xyz/docs/faq/custom_repositories).
 
 [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=docker_status)
 Or click
@@ -29,6 +27,8 @@ Or click
 ## Configuration
 
 Configuration is setup via UI in Home assistant. To add one, go to [Settings > Devices & Services](https://my.home-assistant.io/redirect/integrations) and click the add button. Next choose the [Docker status](https://my.home-assistant.io/redirect/config_flow_start?domain=docker_status) option.
+
+After the initial configuration, additional docker hosts can be added by starting the configuration flow again.
 
 ## Sensors
 

@@ -50,15 +50,16 @@ async def async_setup_entry(
         )
 
     # -- Sum sensors
-    sensors.extend(
-        DockerSensorSum(
-            entry,
-            config.get(CONF_DOCKER_BASE_NAME, ""),
-            docker_sensor,
-            config[CONF_UNIQUE_ID],
+    if len(config[CONF_SENSORS]) > 1:
+        sensors.extend(
+            DockerSensorSum(
+                entry,
+                config.get(CONF_DOCKER_BASE_NAME, ""),
+                docker_sensor,
+                config[CONF_UNIQUE_ID],
+            )
+            for docker_sensor in DOCKER_SENSORS_SUM
         )
-        for docker_sensor in DOCKER_SENSORS_SUM
-    )
 
     async_add_entities(sensors)
 
