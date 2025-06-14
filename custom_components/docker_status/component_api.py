@@ -87,14 +87,13 @@ class ComponentApi:
         """Update via service."""
 
         # await self.async_update_sensors_data()
-        await self.coordinator.async_request_refresh()
+        await self.coordinator.request_refresh()
 
     # -------------------------------------------------------------------
     async def async_prune_images_service(self, call: ServiceCall) -> None:
         """Prune via service."""
         await self.prune_images()
-        await self.coordinator.async_request_refresh()
-        # await self.async_update_sensors_data(False)
+        await self.coordinator.request_refresh()
 
     # -------------------------------------------------------------------
     async def async_update(self) -> None:
@@ -135,7 +134,7 @@ class ComponentApi:
 
     # ------------------------------------------------------------------
     @async_hass_add_executor_job()
-    async def prune_images(self) -> None:
+    def prune_images(self) -> None:
         """Prune images."""
 
         for env_sensor in self.env_sensors.values():
