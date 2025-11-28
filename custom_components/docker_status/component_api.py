@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import docker
-from docker import errors
+from docker import errors as docker_errors
 from docker.models.containers import Container
 from docker.models.images import Image
 from docker.models.volumes import Volume
@@ -17,6 +17,7 @@ from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
+    BINARY_SENSOR_CONNECTED,
     CONF_DOCKER_ENGINE_URL,
     CONF_DOCKER_ENV_SENSOR_NAME,
     CONF_SENSORS,
@@ -47,7 +48,7 @@ class DockerData:
         """Docker data."""
         self.sensor_name: str = sensor_name
         self.engine_url: str = engine_url
-        self.connection_error: bool = False
+        # self.connection_error: bool = False
 
         self.client: docker.DockerClient
         self.values: dict[str, int | float] = {}
@@ -56,6 +57,30 @@ class DockerData:
         self.containers_stopped: list[str | None] = []
         self.images_unused: list[str | None] = []
         self.volumes_unused: list[str | None] = []
+
+    def reset_data(self) -> None:
+        """Reset data."""
+        self.values = {}
+        self.values_uom = {}
+        self.values[SENSOR_CONTAINERS_CPU_PERCENT] = 0.0
+        self.values_uom[SENSOR_CONTAINERS_CPU_PERCENT] = "%"
+
+        self.values[SENSOR_CONTAINERS_MEMORY_USAGE] = 0.0
+        self.values_uom[SENSOR_CONTAINERS_MEMORY_USAGE] = "B"
+
+        self.values[SENSOR_CONTAINERS_RUNNING] = 0
+        self.values[SENSOR_CONTAINERS_STOPPED] = 0
+        self.values[SENSOR_IMAGES] = 0
+        self.values[SENSOR_IMAGES_UNUSED] = 0
+        self.values[SENSOR_IMAGES_DANGLING] = 0
+        self.values[SENSOR_VOLUMES] = 0
+        self.values[SENSOR_VOLUMES_UNUSED] = 0
+        self.values[BINARY_SENSOR_CONNECTED] = False
+
+        self.containers_running = []
+        self.containers_stopped = []
+        self.images_unused = []
+        self.volumes_unused = []
 
 
 # ------------------------------------------------------------------
@@ -102,13 +127,18 @@ class ComponentApi:
 
             tmp_data.values[SENSOR_CONTAINERS_MEMORY_USAGE] = 0.0
             tmp_data.values_uom[SENSOR_CONTAINERS_MEMORY_USAGE] = "B"
+            tmp_data.values[BINARY_SENSOR_CONNECTED] = True
 
             try:
                 tmp_data.client = await self.docker_client(tmp_data.engine_url)
 
-            except errors.DockerException:
-                LOGGER.error("Error creating docker client url %s", tmp_data.engine_url)
-                tmp_data.connection_error = True
+            except docker_errors.DockerException:
+                LOGGER.error(
+                    "Error connecting to docker client for url %s", tmp_data.engine_url
+                )
+                # tmp_data.connection_error = True
+                tmp_data.values[BINARY_SENSOR_CONNECTED] = False
+
                 self.create_issue(
                     TRANSLATION_KEY_CONNECTION_ERROR,
                     {"url": tmp_data.engine_url},
@@ -158,16 +188,50 @@ class ComponentApi:
         """Update data."""
 
         for env_sensor in self.env_sensors.values():
-            if env_sensor.connection_error:
-                continue
+            if not env_sensor.values[BINARY_SENSOR_CONNECTED]:
+                try:
+                    env_sensor.client = await self.docker_client(env_sensor.engine_url)
 
-            containers: list[Container] = await self.list_containers(env_sensor)
+                except docker_errors.DockerException:
+                    LOGGER.error(
+                        "Error reconnecting to docker client for url %s",
+                        env_sensor.engine_url,
+                    )
+                    # env_sensor.connection_error = True
+                    env_sensor.values[BINARY_SENSOR_CONNECTED] = False
+                    continue
 
-            await self.async_update_container_data(env_sensor, containers, get_job_info)
+                env_sensor.values[BINARY_SENSOR_CONNECTED] = True
 
-            await self.async_update_image_data(env_sensor, containers)
+            try:
+                if await self.is_docker_running(env_sensor.client):
+                    containers: list[Container] = await self.list_containers(env_sensor)
 
-            await self.async_update_volume_data(env_sensor, containers)
+                    await self.async_update_container_data(
+                        env_sensor, containers, get_job_info
+                    )
+
+                    await self.async_update_image_data(env_sensor, containers)
+
+                    await self.async_update_volume_data(env_sensor, containers)
+                else:
+                    # env_sensor.connection_error = True
+                    env_sensor.reset_data()
+                    # env_sensor.values[BINARY_SENSOR_CONNECTED] = False
+            except Exception:  # noqa: BLE001
+                # env_sensor.connection_error = True
+                env_sensor.reset_data()
+
+    # ------------------------------------------------------------------
+    @async_hass_add_executor_job()
+    def is_docker_running(self, client: docker.DockerClient) -> bool:
+        """Is docker running."""
+
+        try:
+            return client.ping()
+
+        except Exception:  # noqa: BLE001
+            return False
 
     # ------------------------------------------------------------------
     @async_hass_add_executor_job()
@@ -340,9 +404,11 @@ class ComponentApi:
         return docker.DockerClient(base_url)
 
     # ------------------------------------------------------------------
-    def get_value(self, env_sensor_name: str, sensor_type: str) -> int | float:
+    def get_value(
+        self, env_sensor_name: str, sensor_type: str, default: Any = 0
+    ) -> int | float:
         """Get value."""
-        return self.env_sensors[env_sensor_name].values.get(sensor_type, 0)
+        return self.env_sensors[env_sensor_name].values.get(sensor_type, default)
 
     # ------------------------------------------------------------------
     def get_value_uom(self, env_sensor_name: str, sensor_type: str) -> str | None:

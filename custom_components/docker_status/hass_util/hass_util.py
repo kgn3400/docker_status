@@ -86,7 +86,7 @@ async def async_get_user_language() -> str:
 def async_hass_add_executor_job(
     func=None,
 ):
-    """Decorator to execute a method in async mode in hass."""  # noqa: D401
+    """Decorator to execute a method in async mode in hass."""
 
     if func is None:
         return partial(

@@ -13,7 +13,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .component_api import ComponentApi
 from .const import DOMAIN, LOGGER
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
 
 # ------------------------------------------------------------------
@@ -34,8 +34,6 @@ type CommonConfigEntry = ConfigEntry[CommonData]
 async def async_setup_entry(hass: HomeAssistant, entry: CommonConfigEntry) -> bool:
     """Set up Docker status from a config entry."""
 
-    # hass.data.setdefault(DOMAIN, {})
-
     component_api: ComponentApi = ComponentApi(
         hass,
         entry,
@@ -47,6 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: CommonConfigEntry) -> bo
         name=DOMAIN,
         update_interval=timedelta(minutes=1),
         update_method=component_api.async_update,
+        config_entry=entry,
     )
 
     component_api.coordinator = coordinator

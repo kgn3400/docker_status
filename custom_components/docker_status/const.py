@@ -31,6 +31,7 @@ SENSOR_IMAGES_UNUSED = "Images unused"
 SENSOR_IMAGES_DANGLING = "Images dangling"
 SENSOR_VOLUMES = "Volumes"
 SENSOR_VOLUMES_UNUSED = "Volumes unused"
+BINARY_SENSOR_CONNECTED = "Connected"
 
 
 DOCKER_SENSORS = [
